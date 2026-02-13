@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>RSA送信者：暗号化プロセス可視化</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #e3f2fd; line-height: 1.5; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .step { border-left: 4px solid #2196f3; padding-left: 15px; margin: 15px 0; }
+        .math { font-family: 'Courier New', monospace; background: #eee; padding: 10px; word-break: break-all; font-size: 0.9em; }
+        input, textarea { width: 100%; padding: 10px; box-sizing: border-box; font-family: monospace; }
+        button { padding: 10px 20px; cursor: pointer; background: #2196f3; color: white; border: none; border-radius: 5px; font-size: 1em; }
+    </style>
+</head>
+<body>
+    <h1>RSA送信者：暗号化</h1>
+
+    <div class="card">
+        <h2>工程1：相手から貰った公開鍵を入力</h2>
+        n: <input type="text" id="targetN" placeholder="nを入力"><br><br>
+        e: <input type="text" id="targetE" value="65537">
+    </div>
+
+    <div class="card">
+        <h2>工程2：メッセージの数値化</h2>
+        メッセージ: <input type="text" id="msgInput" value="Hello RSA!">
+        <br><br>
+        <button onclick="encryptProcess()">暗号化プロセスを開始</button>
+
+        <div id="encProcess" style="display:none;">
+            <div class="step">
+                <strong>1. テキストをバイトデータに変換:</strong><br>
+                <small>UTF-8エンコードによる16進数表現</small>
+                <div class="math" id="valHex"></div>
+            </div>
+            <div class="step">
+                <strong>2. 16進数を10進数の巨大な数値 (M) に変換:</strong><br>
+                <div class="math" id="valM"></div>
+            </div>
+            <div class="step">
+                <strong>3. 公開鍵で暗号化計算:</strong><br>
+                <small>計算式: C = M<sup>e</sup> mod n</small>
+                <div class="math" id="valC" style="color: blue; font-weight: bold;"></div>
+            </div>
+            <p>↑ この数字を相手（受信者）に送ります。</p>
+        </div>
+    </div>
+
+<script>
+function powerMod(base, exp, mod) {
+    let res = 1n; base %= mod;
+    while (exp > 0n) { if (exp % 2n === 1n) res = (res * base) % mod; base = (base * base) % mod; exp /= 2n; }
+    return res;
+}
+
+function encryptProcess() {
+    const n = BigInt(document.getElementById('targetN').value.trim());
+    const e = BigInt(document.getElementById('targetE').value.trim());
+    const msg = document.getElementById('msgInput').value;
+
+    // 1. 文字列 -> Hex
+    const bytes = new TextEncoder().encode(msg);
+    let hex = "";
+    bytes.forEach(b => hex += b.toString(16).padStart(2, '0'));
+    document.getElementById('valHex').innerText = hex;
+
+    // 2. Hex -> BigInt (M)
+    const m = BigInt("0x" + hex);
+    document.getElementById('valM').innerText = m.toString();
+
+    if (m >= n) { alert("メッセージが長すぎて n を超えました。"); return; }
+
+    // 3. Encrypt
+    const c = powerMod(m, e, n);
+    document.getElementById('valC').innerText = c.toString();
+    
+    document.getElementById('encProcess').style.display = 'block';
+}
+</script>
+</body>
+</html>
