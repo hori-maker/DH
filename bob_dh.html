@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>DH鍵交換：ボブの画面</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #e3f2fd; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .math { font-family: monospace; background: #eee; padding: 10px; word-break: break-all; margin: 10px 0; border-radius: 5px; }
+        .secret { color: #d32f2f; font-weight: bold; }
+        .step { border-left: 4px solid #1976d2; padding-left: 15px; margin: 15px 0; }
+        textarea { width: 100%; height: 60px; }
+        button { padding: 10px 20px; cursor: pointer; background: #1976d2; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>2. ボブ（受信側）</h1>
+
+    <div class="card">
+        <h2>フェーズ1：共通鍵の作成</h2>
+        アリスの p: <input type="text" id="inP" style="width:100%;"><br>
+        アリスの g: <input type="text" id="inG" style="width:100%;"><br>
+        アリスの A: <input type="text" id="inA" style="width:100%;"><br><br>
+        <button onclick="computeBobSecret()">ボブの公開値 B と 共通鍵 S を計算</button>
+        
+        <div id="step1" style="display:none;">
+            <p>アリスに教える公開値 B:</p>
+            <div class="math" style="color:blue;">ボブの公開値 B: <span id="valPubB"></span></div>
+            <p class="secret">ボブだけの秘密 b: <span id="valB"></span></p>
+            <p>計算された二人の共通鍵:</p>
+            <div class="math" style="background:#4caf50; color:white;">共通鍵 S: <span id="finalSecret"></span></div>
+        </div>
+    </div>
+
+    <div class="card" id="decSection" style="display:none;">
+        <h2>フェーズ2：届いた暗号の復号</h2>
+        アリスから届いた暗号文(数字): <textarea id="cipherInput"></textarea><br><br>
+        <button onclick="decryptMsg()">復号実行</button>
+
+        <div id="decProcess" style="display:none;">
+            <div class="step">
+                <strong>1. 共通鍵 S で復号（XOR再計算）:</strong>
+                <div class="math" id="valM"></div>
+            </div>
+            <div class="step">
+                <strong>2. 数字をテキストに変換:</strong>
+                <div class="math" style="font-size: 1.5em; color: green; font-weight: bold;" id="resText"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let s;
+        function powerMod(base, exp, mod) {
+            let res = 1n; base %= mod;
+            while (exp > 0n) { if (exp % 2n === 1n) res = (res * base) % mod; base = (base * base) % mod; exp /= 2n; }
+            return res;
+        }
+
+        function computeBobSecret() {
+            const p = BigInt(document.getElementById('inP').value.trim());
+            const g = BigInt(document.getElementById('inG').value.trim());
+            const a = BigInt(document.getElementById('inA').value.trim());
+            const b = BigInt(Math.floor(Math.random() * 10000000000));
+            
+            const pubB = powerMod(g, b, p);
+            s = powerMod(a, b, p);
+
+            document.getElementById('valB').innerText = b;
+            document.getElementById('valPubB').innerText = pubB;
+            document.getElementById('finalSecret').innerText = s;
+            document.getElementById('step1').style.display = 'block';
+            document.getElementById('decSection').style.display = 'block';
+        }
+
+        function decryptMsg() {
+            const c = BigInt(document.getElementById('cipherInput').value.trim());
+            // 共通鍵暗号の性質: C ^ S = M
+            const m = c ^ s;
+            document.getElementById('valM').innerText = m.toString();
+
+            let hex = m.toString(16);
+            if (hex.length % 2 !== 0) hex = '0' + hex;
+            const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+            document.getElementById('resText').innerText = new TextDecoder().decode(bytes);
+            document.getElementById('decProcess').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
