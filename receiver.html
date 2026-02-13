@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>RSA受信者：鍵生成と復号の全工程</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #fdf6e3; line-height: 1.5; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .step { border-left: 4px solid #859900; padding-left: 15px; margin: 15px 0; }
+        .math { font-family: 'Courier New', monospace; background: #eee; padding: 10px; word-break: break-all; font-size: 0.9em; }
+        .secret { color: #dc322f; font-weight: bold; }
+        .public { color: #268bd2; font-weight: bold; }
+        textarea { width: 100%; height: 80px; font-family: monospace; }
+        button { padding: 10px 20px; cursor: pointer; background: #859900; color: white; border: none; border-radius: 5px; font-size: 1em; }
+        h1, h2 { color: #073642; }
+    </style>
+</head>
+<body>
+    <h1>RSA受信者：鍵生成と復号</h1>
+
+    <div class="card">
+        <h2>工程1：鍵の生成プロセス</h2>
+        <button onclick="generateRSA()">巨大な素数を探して鍵を作る</button>
+        <div id="genProcess" style="display:none;">
+            <div class="step">
+                <strong>1. 秘密の素数を2つ選択 (p, q):</strong><br>
+                <div class="math secret">p = <span id="valP"></span></div>
+                <div class="math secret">q = <span id="valQ"></span></div>
+            </div>
+            <div class="step">
+                <strong>2. 公開数値 (n) の計算:</strong><br>
+                <small>n = p × q</small>
+                <div class="math public">n = <span id="valN"></span></div>
+            </div>
+            <div class="step">
+                <strong>3. オイラー関数 (φ) の計算:</strong><br>
+                <small>φ(n) = (p-1) × (q-1) ※鍵ペアを作るための特殊な数</small>
+                <div class="math">φ(n) = <span id="valPhi"></span></div>
+            </div>
+            <div class="step">
+                <strong>4. 指数の決定 (e, d):</strong><br>
+                <small>e: 公開指数 (一般的に65537)</small><br>
+                <small>d: 秘密の復号指数 (e × d ≡ 1 mod φ(n) となる数)</small>
+                <div class="math public">e = <span id="valE"></span></div>
+                <div class="math secret">d = <span id="valD"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>工程2：送信者へ渡す情報（公開鍵）</h2>
+        <p>この2つの数字だけを相手に教えてください。<b>p, q, d</b> は絶対に秘密です。</p>
+        <div class="math">n: <span id="outN">---</span></div>
+        <div class="math">e: <span id="outE">---</span></div>
+    </div>
+
+    <div class="card">
+        <h2>工程3：届いた暗号を元に戻す</h2>
+        <p>相手から届いた暗号文（数字）を貼り付けてください：</p>
+        <textarea id="cipherInput" placeholder="例: 458392..."></textarea><br><br>
+        <button onclick="decryptProcess()">復号（デコード）開始</button>
+        
+        <div id="decResult" style="display:none;">
+            <div class="step">
+                <strong>1. 秘密鍵 d を使った数学計算:</strong><br>
+                <small>計算式: M = C<sup>d</sup> mod n</small>
+                <div class="math">復元された数値 (M) = <div id="resM"></div></div>
+            </div>
+            <div class="step">
+                <strong>2. 数値をテキストに変換:</strong><br>
+                <small>数値(Hex) → バイト列 → 文字列</small>
+                <div class="math" style="font-size: 1.5em; color: green; font-weight: bold;" id="resText"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- 数学エンジン (BigInt) ---
+function powerMod(base, exp, mod) {
+    let res = 1n; base %= mod;
+    while (exp > 0n) { if (exp % 2n === 1n) res = (res * base) % mod; base = (base * base) % mod; exp /= 2n; }
+    return res;
+}
+function isPrime(n) {
+    if (n < 2n) return false;
+    const bases = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n];
+    for (let a of bases) {
+        if (n === a) return true;
+        if (powerMod(a, n - 1n, n) !== 1n) return false;
+    }
+    return true;
+}
+function findPrime(digits) {
+    let p = BigInt(Array.from({length:digits}, () => Math.floor(Math.random()*10)).join(''));
+    if (p % 2n === 0n) p++;
+    while (!isPrime(p)) p += 2n;
+    return p;
+}
+function modInverse(e, phi) {
+    let [a, b, x0, x1] = [e, phi, 1n, 0n];
+    while (b !== 0n) { let q = a / b; [a, b] = [b, a % b]; [x0, x1] = [x1, x0 - q * x1]; }
+    return x0 < 0n ? x0 + phi : x0;
+}
+
+// --- UI制御 ---
+let state = {};
+
+function generateRSA() {
+    const p = findPrime(40);
+    const q = findPrime(40);
+    const n = p * q;
+    const phi = (p-1n) * (q-1n);
+    const e = 65537n;
+    const d = modInverse(e, phi);
+
+    state = {p, q, n, phi, e, d};
+
+    document.getElementById('valP').innerText = p;
+    document.getElementById('valQ').innerText = q;
+    document.getElementById('valN').innerText = n;
+    document.getElementById('valPhi').innerText = phi;
+    document.getElementById('valE').innerText = e;
+    document.getElementById('valD').innerText = d;
+    document.getElementById('outN').innerText = n;
+    document.getElementById('outE').innerText = e;
+    document.getElementById('genProcess').style.display = 'block';
+}
+
+function decryptProcess() {
+    const c = BigInt(document.getElementById('cipherInput').value.trim());
+    const m = powerMod(c, state.d, state.n);
+    
+    document.getElementById('resM').innerText = m.toString();
+    
+    let hex = m.toString(16);
+    if (hex.length % 2 !== 0) hex = '0' + hex;
+    const bytes = new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+    const text = new TextDecoder().decode(bytes);
+
+    document.getElementById('resText').innerText = text;
+    document.getElementById('decResult').style.display = 'block';
+}
+</script>
+</body>
+</html>
