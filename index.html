@@ -2,21 +2,73 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>DH法シミュレーター</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>暗号技術シミュレーターポータル</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; background: #f0f2f5; }
-        .btn { display: inline-block; padding: 20px 40px; margin: 10px; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 1.2em; transition: 0.3s; }
-        .rec-btn { background: #859900; }
-        .sen-btn { background: #2196f3; }
-        .btn:hover { opacity: 0.8; transform: translateY(-3px); }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; color: #333; }
+        .container { max-width: 900px; margin: 50px auto; padding: 20px; text-align: center; }
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+        .description { color: #7f8c8d; margin-bottom: 40px; }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        
+        .card { background: white; border-radius: 12px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s; }
+        .card:hover { transform: translateY(-5px); }
+        .card h2 { margin-top: 0; font-size: 1.5em; }
+        .card p { font-size: 0.9em; color: #666; margin-bottom: 25px; height: 3em; }
+
+        /* RSAカラー */
+        .rsa-card h2 { color: #859900; }
+        /* DHカラー */
+        .dh-card h2 { color: #1976d2; }
+
+        .btn-group { display: flex; flex-direction: column; gap: 10px; }
+        .btn { display: block; padding: 12px; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 0.95em; transition: 0.2s; }
+        
+        /* RSAボタン */
+        .btn-rsa-rec { background: #859900; }
+        .btn-rsa-sen { background: #a4b32d; }
+        /* DHボタン */
+        .btn-dh-alice { background: #1976d2; }
+        .btn-dh-bob { background: #42a5f5; }
+
+        .btn:hover { opacity: 0.85; }
+        .footer { margin-top: 50px; font-size: 0.8em; color: #999; }
     </style>
 </head>
 <body>
-    <h1>DH法 仕組み体験ツール</h1>
-    <p>ブラウザで2つのタブを開いて、交互に操作してみてください。</p>
-    <div style="margin-top: 40px;">
-        <a href="receiver.html" class="btn rec-btn">1. 受信者モード（鍵を作る）</a>
-        <a href="sender.html" class="btn sen-btn">2. 送信者モード（暗号を作る）</a>
+
+<div class="container">
+    <h1>暗号技術シミュレーター</h1>
+    <p class="description">現代のインターネットを支える2つの代表的な暗号技術を体験しましょう。</p>
+
+    <div class="grid">
+        <!-- RSA Section -->
+        <div class="card rsa-card">
+            <h2>1. RSA暗号</h2>
+            <p>公開鍵と秘密鍵を使い、特定の相手にしか読めないメッセージを送ります。</p>
+            <div class="btn-group">
+                <a href="receiver.html" class="btn btn-rsa-rec">受信者モード (鍵を作る)</a>
+                <a href="sender.html" class="btn btn-rsa-sen">送信者モード (暗号を作る)</a>
+            </div>
+        </div>
+
+        <!-- DH Section -->
+        <div class="card dh-card">
+            <h2>2. DH鍵交換</h2>
+            <p>知らない相手と、その場のやり取りだけで「二人の秘密の数字」を作り出します。</p>
+            <div class="btn-group">
+                <a href="alice_dh.html" class="btn btn-dh-alice">アリス (交換を始める)</a>
+                <a href="bob_dh.html" class="btn btn-dh-bob">ボブ (交換に応じる)</a>
+            </div>
+        </div>
     </div>
+
+    <div class="footer">
+        ※ 2つのブラウザタブ（または2つのデバイス）を開いて交互に操作してください。
+    </div>
+</div>
+
 </body>
 </html>
