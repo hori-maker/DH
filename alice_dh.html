@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>DH鍵交換：アリスの画面</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background: #fff5f5; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .math { font-family: monospace; background: #eee; padding: 10px; word-break: break-all; margin: 10px 0; border-radius: 5px; }
+        .secret { color: #d32f2f; font-weight: bold; }
+        .step { border-left: 4px solid #d32f2f; padding-left: 15px; margin: 15px 0; }
+        textarea { width: 100%; height: 60px; }
+        button { padding: 10px 20px; cursor: pointer; background: #d32f2f; color: white; border: none; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>1. アリス（送信側）</h1>
+
+    <!-- 鍵交換フェーズ -->
+    <div class="card">
+        <h2>フェーズ1：共通鍵の作成</h2>
+        <div class="step">
+            <button onclick="setup()">1. 鍵交換の準備を開始</button>
+            <div id="step1" style="display:none;">
+                <p>ボブに教えても良い数字（p, g, A）:</p>
+                <div class="math">p: <span id="valP"></span></div>
+                <div class="math">g: <span id="valG"></span></div>
+                <div class="math">アリスの公開値 A: <span id="valPubA"></span></div>
+                <p class="secret">アリスだけの秘密 a: <span id="valA"></span></p>
+            </div>
+        </div>
+
+        <div class="step">
+            <p>2. ボブから届いた「公開値 B」を入力:</p>
+            <input type="text" id="inputB" style="width:100%;">
+            <button onclick="computeSecret()">3. 共通鍵(S)を計算</button>
+            <div id="step2" style="display:none;">
+                <p>計算結果（これが二人の秘密の鍵になります）:</p>
+                <div class="math" style="background:#4caf50; color:white;">共通鍵 S: <span id="finalSecret"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 暗号化フェーズ -->
+    <div class="card" id="cryptoSection" style="display:none;">
+        <h2>フェーズ2：英文の暗号化</h2>
+        <p>共通鍵 S を使ってメッセージを暗号化します。</p>
+        メッセージ: <input type="text" id="msgInput" value="Hello Bob, this is a secret!" style="width:70%;">
+        <button onclick="encryptMsg()">暗号化実行</button>
+        
+        <div id="encProcess" style="display:none;">
+            <div class="step">
+                <strong>1. メッセージを数字(M)に変換:</strong>
+                <div class="math" id="valM"></div>
+            </div>
+            <div class="step">
+                <strong>2. 共通鍵 S で暗号化（Symmetric Encryption）:</strong><br>
+                <small>※シンプルにするため XOR計算をしています</small>
+                <div class="math" id="valC" style="color: blue; font-weight: bold;"></div>
+            </div>
+            <p>↑ この数字をボブに送ってください。</p>
+        </div>
+    </div>
+
+    <script>
+        let p, g, a, s;
+        function powerMod(base, exp, mod) {
+            let res = 1n; base %= mod;
+            while (exp > 0n) { if (exp % 2n === 1n) res = (res * base) % mod; base = (base * base) % mod; exp /= 2n; }
+            return res;
+        }
+
+        function setup() {
+            p = BigInt("962143171858814479133496931731602324194017327463"); 
+            g = 5n;
+            a = BigInt(Math.floor(Math.random() * 10000000000));
+            const pubA = powerMod(g, a, p);
+            document.getElementById('valP').innerText = p;
+            document.getElementById('valG').innerText = g;
+            document.getElementById('valA').innerText = a;
+            document.getElementById('valPubA').innerText = pubA;
+            document.getElementById('step1').style.display = 'block';
+        }
+
+        function computeSecret() {
+            const b = BigInt(document.getElementById('inputB').value.trim());
+            s = powerMod(b, a, p);
+            document.getElementById('finalSecret').innerText = s;
+            document.getElementById('step2').style.display = 'block';
+            document.getElementById('cryptoSection').style.display = 'block';
+        }
+
+        function encryptMsg() {
+            const msg = document.getElementById('msgInput').value;
+            const bytes = new TextEncoder().encode(msg);
+            let hex = "";
+            bytes.forEach(b => hex += b.toString(16).padStart(2, '0'));
+            const m = BigInt("0x" + hex);
+            
+            // XOR暗号化: C = M ^ S
+            const c = m ^ s;
+
+            document.getElementById('valM').innerText = m.toString();
+            document.getElementById('valC').innerText = c.toString();
+            document.getElementById('encProcess').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
